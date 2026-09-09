@@ -96,7 +96,29 @@ function card(id) {
   carry.textContent = 'Continue';
   carry.hidden = true;
   carry.addEventListener('click', () => act('continue', { id }, 'Carrying on from where it stopped.'));
-  actions.append(open, second, carry);
+
+  // On the card, not buried in the detail panel: this is the button people
+  // come looking for once a run has finished.
+  const keep = document.createElement('button');
+  keep.className = 'keep';
+  keep.hidden = true;
+  keep.addEventListener('click', async () => {
+    if (busy) return notify('Something else is still finishing. Try again in a moment.', true);
+    busy = true;
+    keep.disabled = true;
+    keep.textContent = 'Checking the code…';
+    try {
+      await post('merge', { id, force: forceCard === id });
+      forceCard = null;
+      await loadProject(true);
+      await refresh();
+      notify('Kept. Merged into your project.');
+    } catch (e) {
+      notify(e.message, true);
+      if (/^Not merged:/.test(e.message)) forceCard = id;
+    } finally { busy = false; render(); }
+  });
+  actions.append(open, keep, second, carry);
   article.append(top, title, more, headline, meta, actions);
 
   open.addEventListener('click', () => select(id));
@@ -156,6 +178,11 @@ function card(id) {
     carry.hidden = !run.canCarryOn;
     carry.disabled = busy;
     carry.textContent = run.commit ? 'Continue' : 'Run it again';
+
+    const canKeep = !!run.commit && !run.merged && !['running', 'waiting'].includes(run.status);
+    keep.hidden = !canKeep;
+    keep.disabled = busy;
+    keep.textContent = forceCard === id ? 'Keep it anyway' : 'Keep it';
   };
   return { article, update };
 }
@@ -340,11 +367,20 @@ async function loadProject(force = false) {
 
 function renderPush() {
   const button = $('push');
-  const ready = project.git && project.upstream && project.ahead > 0;
-  button.hidden = !ready;
-  button.disabled = busy;
-  button.classList.toggle('arming', armedPush);
-  if (!ready) { armedPush = false; return; }
+  // Shown whenever the project has somewhere to push to, rather than vanishing
+  // when there is nothing to send: a button that disappears reads as missing.
+  const possible = project.git && project.upstream;
+  button.hidden = !possible;
+  if (!possible) { armedPush = false; return; }
+  const waiting = project.ahead > 0;
+  button.disabled = busy || !waiting;
+  button.classList.toggle('arming', armedPush && waiting);
+  if (!waiting) {
+    armedPush = false;
+    button.textContent = 'Nothing to push';
+    button.title = `${project.branch} matches ${project.upstream}.`;
+    return;
+  }
   button.textContent = armedPush
     ? `Push to ${project.upstream}?`
     : `Push ${project.ahead} commit${project.ahead === 1 ? '' : 's'}`;
@@ -525,10 +561,12 @@ async function dispatch() {
   busy = true;
   $('dispatch').disabled = true;
   const started = [];
+  const batch = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
   try {
     // In order, so a task that follows another already has its id to point at.
     for (const [index, task] of tasks.entries()) {
       const { id } = await post('start', {
+        batch,
         agent: task.agent,
         prompt: task.prompt,
         repo: $('repo').value,
@@ -677,6 +715,34 @@ function renderRunner() {
   $('runner').append(picture);
 }
 
+const AUTO_LABELS = {
+  off: 'wait for me',
+  merge: 'merge what passes',
+  push: 'merge and push'
+};
+
+function renderAuto() {
+  const select = $('auto');
+  if (select.dataset.built !== (state.autoModes || []).join(',')) {
+    select.dataset.built = (state.autoModes || []).join(',');
+    select.replaceChildren(...(state.autoModes || []).map(mode => new Option(AUTO_LABELS[mode] || mode, mode)));
+  }
+  if (document.activeElement !== select) select.value = state.auto || 'off';
+  select.disabled = busy;
+
+  // Say what it did on its own, since nobody was watching when it happened.
+  const [latest] = state.autoLog || [];
+  if (latest && latest.at !== autoToldAbout) {
+    autoToldAbout = latest.at;
+    const where = latest.repo.split('/').filter(Boolean).pop();
+    if (!latest.ok) notify(`${where}: ${latest.reason}`, true);
+    else if (latest.pushed) notify(`${where}: kept ${latest.merged.length} and pushed ${latest.pushed} commit${latest.pushed === 1 ? '' : 's'} to ${latest.upstream}.`);
+    else notify(`${where}: kept ${latest.merged.length} run${latest.merged.length === 1 ? '' : 's'}. Not pushed.`);
+  }
+}
+
+let autoToldAbout = null;
+
 function renderProgress(runs) {
   renderRunner();
   const busy = runs.filter(r => ['running', 'waiting'].includes(r.status));
@@ -699,6 +765,7 @@ function render() {
   const running = state.runs.filter(r => r.status === 'running').length;
   $('active').textContent = running ? `${running} running` : 'None running';
   renderProgress(state.runs.filter(r => !r.supersededBy));
+  renderAuto();
 
   // Merging everything is offered only when there is more than one thing to
   // merge; a single run is merged from its own card.
@@ -772,10 +839,10 @@ function render() {
       const count = document.createElement('span');
       count.className = 'tag';
       head.append(name, count);
-      const grid = document.createElement('div');
-      grid.className = 'grid';
-      section.append(head, grid);
-      group = { section, name, count, grid };
+      const batches = document.createElement('div');
+      batches.className = 'batches';
+      section.append(head, batches);
+      group = { section, name, count, batches, rounds: new Map() };
       groups.set(repo, group);
     }
     const runs = byProject.get(repo);
@@ -786,15 +853,57 @@ function render() {
     group.count.textContent = working ? `${runs.length} · ${working} working` : `${runs.length}`;
     if ($('runs').children[position] !== group.section) $('runs').insertBefore(group.section, $('runs').children[position] || null);
 
-    runs.forEach((run, index) => {
-      let entry = cards.get(run.id);
-      if (!entry) {
-        entry = card(run.id);
-        cards.set(run.id, entry);
+    // Within a project, runs started together stay together: two separate
+    // rounds of work on the same repo are two different things.
+    const byBatch = new Map();
+    for (const run of runs) {
+      if (!byBatch.has(run.batch)) byBatch.set(run.batch, []);
+      byBatch.get(run.batch).push(run);
+    }
+    for (const id of group.rounds.keys()) {
+      if (byBatch.has(id)) continue;
+      group.rounds.get(id).round.remove();
+      group.rounds.delete(id);
+    }
+
+    [...byBatch.keys()].forEach((id, slot) => {
+      let round = group.rounds.get(id);
+      if (!round) {
+        const box = document.createElement('div');
+        box.className = 'round';
+        const label = document.createElement('div');
+        label.className = 'round-head';
+        const when = document.createElement('span');
+        const size = document.createElement('span');
+        size.className = 'tag';
+        label.append(when, size);
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+        box.append(label, grid);
+        round = { round: box, when, size, grid };
+        group.rounds.set(id, round);
       }
-      entry.update(run);
-      // Newest first; only move a card when it is not already in place.
-      if (group.grid.children[index] !== entry.article) group.grid.insertBefore(entry.article, group.grid.children[index] || null);
+      const batchRuns = byBatch.get(id);
+      const started = Math.min(...batchRuns.map(r => r.startedAt));
+      round.when.textContent = new Date(started).toLocaleString([], { hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'short' });
+      const busyHere = batchRuns.filter(r => ['running', 'waiting'].includes(r.status)).length;
+      round.size.textContent = busyHere
+        ? `${batchRuns.length} agent${batchRuns.length === 1 ? '' : 's'} · ${busyHere} working`
+        : `${batchRuns.length} agent${batchRuns.length === 1 ? '' : 's'}`;
+      round.round.classList.toggle('busy', busyHere > 0);
+      // One agent does not need a whole row; two or more do.
+      round.round.classList.toggle('single', batchRuns.length === 1);
+      if (group.batches.children[slot] !== round.round) group.batches.insertBefore(round.round, group.batches.children[slot] || null);
+
+      batchRuns.forEach((run, index) => {
+        let entry = cards.get(run.id);
+        if (!entry) {
+          entry = card(run.id);
+          cards.set(run.id, entry);
+        }
+        entry.update(run);
+        if (round.grid.children[index] !== entry.article) round.grid.insertBefore(entry.article, round.grid.children[index] || null);
+      });
     });
   });
 
@@ -920,6 +1029,7 @@ function select(id) {
 function closeDetail() {
   selected = null;
   forceMerge = null;
+  forceCard = null;
   confirmingDiscard = null;
   $('discard-branch').textContent = 'Throw away';
   $('detail').hidden = true;
@@ -1053,6 +1163,19 @@ $('copy-summary').addEventListener('click', async () => {
     notify('Summary copied.');
   } catch { notify('Could not copy — select the text instead.', true); }
 });
+$('auto').addEventListener('change', async () => {
+  const mode = $('auto').value;
+  try {
+    await postTo('/api/auto', { mode });
+    state.auto = mode;
+    notify(mode === 'off'
+      ? 'Finished work will wait for you.'
+      : mode === 'merge'
+        ? 'Finished work will be merged once its build and tests pass. Pushing stays yours.'
+        : 'Finished work will be merged once its build and tests pass, then pushed.',
+      mode === 'push');
+  } catch (e) { notify(e.message, true); $('auto').value = state.auto || 'off'; }
+});
 $('tidy').addEventListener('click', async () => {
   if (busy) return notify('Something else is still finishing. Try again in a moment.', true);
   busy = true;
@@ -1070,6 +1193,7 @@ $('earlier').addEventListener('click', () => { showEarlier = !showEarlier; rende
 $('tab-log').addEventListener('click', () => setView('log'));
 $('tab-diff').addEventListener('click', () => setView('diff'));
 let forceMerge = null;   // the run whose failed checks have been overridden
+let forceCard = null;    // the same, for the button on a card
 
 async function keepIt(force) {
   const id = selected;

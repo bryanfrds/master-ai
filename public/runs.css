@@ -44,7 +44,8 @@ aside{position:relative}
 .tag.del{color:#95513a;background:#f4e8e2}
 .run-actions{display:flex;gap:8px;margin-top:18px}
 .run-actions button{flex:1;background:#edf0e8;color:#415438;padding:10px}
-.run-actions button:last-child:not([hidden]){background:#283f31;color:#fff}
+.run-actions button.keep:not([hidden]){background:#283f31;color:#fff}
+.run-actions button.keep.arming{background:#8d4429}
 .log{background:#22271f;border-radius:12px;padding:20px;max-height:520px;overflow-y:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.65}
 .line{display:flex;gap:12px;padding:3px 0;overflow-wrap:anywhere}
 .line span{color:#71806c;flex:0 0 62px}
@@ -210,3 +211,23 @@ aside{position:relative}
 .project-group.current .group-head h3{color:#2f3b28}
 .project-group:not(.current) .group-head h3{color:#7c8a74}
 .project-group .empty{margin:0}
+
+.auto{display:flex;align-items:center;gap:8px;font-size:11px;color:#75806f}
+.auto select{font:inherit;font-size:11px;color:#3f4b3d;background:#f4f6f1;border:1px solid #e2e7dd;border-radius:8px;padding:7px 8px}
+.auto select:focus{outline:2px solid #9db78e;outline-offset:1px}
+
+/* A box per project, and a darker one per round of work inside it, so two
+   separate batches on the same repo do not read as one pile of cards. */
+.project-group{background:#eef1ea;border:1px solid #dfe4d9;border-radius:14px;padding:16px 16px 4px}
+.project-group.current{background:#e9efe3;border-color:#cfdcc6}
+.group-head{margin-bottom:12px}
+/* Rounds sit side by side: a round holding one agent has no business taking a
+   full row to itself. Only one with several needs the width. */
+.batches{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
+.round{flex:1 1 100%;border-left:2px solid #d7dfd0;padding:0 0 0 12px;margin-bottom:12px}
+.round.single{flex:1 1 calc(50% - 6px)}
+.round.busy{border-left-color:#8fae7d}
+.round-head{display:flex;align-items:baseline;gap:8px;margin-bottom:9px;font-size:11px;color:#78836f}
+.round .grid{gap:12px}
+.round.single .grid{grid-template-columns:1fr}
+@media(max-width:760px){.round.single{flex:1 1 100%}}

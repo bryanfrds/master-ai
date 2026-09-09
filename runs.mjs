@@ -123,7 +123,7 @@ export function splitPatch(patch, numstat = '') {
 }
 
 export class Runs {
-  constructor(dir, vault, secrets = null, models = null) { this.dir = dir; this.vault = vault; this.secrets = secrets; this.models = models; this.runs = new Map(); this.lastModelSeen = {}; }
+  constructor(dir, vault, secrets = null, models = null, auto = null) { this.dir = dir; this.vault = vault; this.secrets = secrets; this.models = models; this.auto = auto; this.runs = new Map(); this.lastModelSeen = {}; this.autoLog = []; }
 
   async init() {
     await mkdir(this.dir, { recursive: true, mode: 0o700 });
@@ -169,6 +169,7 @@ export class Runs {
       startedAt: r.startedAt, endedAt: r.endedAt, error: r.error, diff: r.diff,
       commit: r.commit ?? null, commitError: r.commitError ?? null, after: r.after ?? null, merged: r.merged ?? null, keys: r.keys ?? [],
       continues: r.continues ?? null, supersededBy: this.supersededBy(r.id)?.id ?? null, canCarryOn: this.canCarryOn(r),
+      batch: r.batch ?? r.id,
       size: r.size ?? null, model: r.model ?? null, checked: r.checked ?? null,
       files: r.files.slice(0, 40), seq: r.seq, headline: r.headline
     }));
@@ -280,7 +281,7 @@ export class Runs {
     return { tasks: parsePlan(planning.out) };
   }
 
-  async start({ agent, prompt, repo, account = null, worktree = true, sandbox = 'workspace-write', after = null, continues = null }) {
+  async start({ agent, prompt, repo, account = null, worktree = true, sandbox = 'workspace-write', after = null, continues = null, batch = null }) {
     const prepared = await this.prepare({ agent, prompt, repo, worktree });
     if (after) {
       const earlier = this.runs.get(after);
@@ -300,6 +301,8 @@ export class Runs {
     const record = {
       id, agent, label: prepared.definition.label, prompt: prepared.prompt, repo: prepared.repo,
       dir: prepared.repo, branch: null, account, sandbox, after, continues, worktree: !!(worktree && prepared.git),
+      // Runs started together stay together, however the page later sorts them.
+      batch: batch || randomUUID(),
       git: prepared.git, status: queued ? 'waiting' : 'running',
       startedAt: Date.now(), endedAt: null, exitCode: null, error: null,
       headline: queued ? 'Waiting for the run before it…' : 'Starting…',
@@ -474,6 +477,43 @@ export class Runs {
     }
     await this.persist(record).catch(() => {});
     await this.release(record);
+    await this.settleProject(record.repo).catch(() => {});
+  }
+
+  // Once nothing is left working on a project, do whatever was asked for
+  // without a person: merge what stands up, and push if that was chosen.
+  // Waiting for the whole batch avoids merging a leader while a follower that
+  // branched from it is still writing.
+  async settleProject(repo) {
+    if (!this.auto) return;
+    const mode = await this.auto.mode();
+    if (mode === 'off') return;
+    const busy = [...this.runs.values()].some(r => r.repo === repo && ['running', 'waiting'].includes(r.status));
+    if (busy) return;
+    const waiting = this.mergeable().filter(r => r.repo === repo);
+    if (!waiting.length) return;
+
+    const note = entry => {
+      this.autoLog.unshift({ at: Date.now(), repo, ...entry });
+      this.autoLog = this.autoLog.slice(0, 20);
+    };
+    const merged = [];
+    for (const run of waiting) {
+      try {
+        await this.merge(run.id);
+        merged.push(run.agent);
+      } catch (e) {
+        note({ ok: false, merged, reason: e.message });
+        return;   // stop at the first refusal, exactly as Keep all does
+      }
+    }
+    if (mode !== 'push') return note({ ok: true, merged, pushed: 0 });
+    try {
+      const sent = await this.push(repo);
+      note({ ok: true, merged, pushed: sent.commits, upstream: sent.upstream });
+    } catch (e) {
+      note({ ok: false, merged, reason: `Merged, but not pushed: ${e.message}` });
+    }
   }
 
   async commit(record) {
@@ -529,7 +569,8 @@ export class Runs {
       worktree: !!record.branch || record.worktree,
       sandbox: record.sandbox,
       after: usable ? base : null,
-      continues: id
+      continues: id,
+      batch: record.batch
     });
     // Whatever was queued behind it comes too, so one click restarts the chain.
     await this.requeue(id, fresh.id);
@@ -546,7 +587,7 @@ export class Runs {
       const next = await this.start({
         agent: other.agent, prompt: other.prompt, repo: other.repo, account: other.account,
         worktree: !!other.branch || other.worktree, sandbox: other.sandbox,
-        after: newId, continues: other.id
+        after: newId, continues: other.id, batch: other.batch
       }).catch(() => null);
       if (next) await this.requeue(other.id, next.id, seen);
     }

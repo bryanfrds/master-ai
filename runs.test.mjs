@@ -1054,3 +1054,95 @@ test('a plan may use one agent, and says why each was chosen', () => {
   assert.equal(plan([{ agent: 'claude', prompt: 'x' }])[0].why, null);
   assert.equal(plan([{ agent: 'claude', prompt: 'x', why: '   ' }])[0].why, null);
 });
+
+// Stands in for the settings file, so the tests do not touch one.
+const autoSetTo = mode => ({ mode: async () => mode });
+
+test('a finished batch merges itself when that is what was asked for', async t => {
+  const { repo, runs, base, cleanup } = await workspace();
+  t.after(cleanup);
+  runs.auto = autoSetTo('merge');
+
+  const leader = await runs.start({ agent: 'claude', prompt: 'first', repo });
+  const follower = await runs.start({ agent: 'claude', prompt: 'second', repo, after: leader.id });
+  // Nothing merges while the follower is still queued behind the leader.
+  await settle(runs, leader.id);
+  assert.equal(runs.runs.get(leader.id).merged, null, 'a batch is not merged halfway through');
+
+  await settle(runs, follower.id);
+  await new Promise(r => setTimeout(r, 300));
+  assert.ok(runs.runs.get(leader.id).merged, 'and is merged once the batch is done');
+  assert.equal((await run('git', ['-C', repo, 'show', 'main:added.txt'])).code, 0);
+  const [note] = runs.autoLog;
+  assert.equal(note.ok, true);
+  assert.equal(note.pushed, 0, 'merging alone does not push');
+});
+
+test('work that does not stand up is not merged behind your back', async t => {
+  const { repo, runs, cleanup } = await workspace();
+  t.after(cleanup);
+  // Switched on only once the failing build is in place: otherwise the run
+  // finishes, merges itself, and there is nothing left to refuse.
+  runs.auto = autoSetTo('off');
+  const { id } = await runs.start({ agent: 'claude', prompt: 'x', repo });
+  const record = await settle(runs, id);
+  await writeFile(join(record.dir, 'package.json'), JSON.stringify({ scripts: { build: 'exit 1' } }));
+  await mkdir(join(record.dir, 'node_modules'), { recursive: true });
+
+  runs.auto = autoSetTo('merge');
+  await runs.settleProject(repo);
+  assert.equal(runs.runs.get(id).merged, null);
+  const [note] = runs.autoLog;
+  assert.equal(note.ok, false);
+  assert.match(note.reason, /build failed/);
+});
+
+test('nothing happens on its own while it is switched off', async t => {
+  const { repo, runs, cleanup } = await workspace();
+  t.after(cleanup);
+  runs.auto = autoSetTo('off');
+  const { id } = await runs.start({ agent: 'claude', prompt: 'x', repo });
+  await settle(runs, id);
+  await new Promise(r => setTimeout(r, 200));
+  assert.equal(runs.runs.get(id).merged, null, 'merging stays a decision');
+  assert.deepEqual(runs.autoLog, []);
+});
+
+test('pushing on its own is reported, including when it cannot', async t => {
+  const { repo, runs, cleanup } = await workspace();
+  t.after(cleanup);
+  runs.auto = autoSetTo('push');
+  const { id } = await runs.start({ agent: 'claude', prompt: 'x', repo });
+  await settle(runs, id);
+  await new Promise(r => setTimeout(r, 300));
+
+  assert.ok(runs.runs.get(id).merged, 'it still merges');
+  const [note] = runs.autoLog;
+  // This test repo has no upstream, so the push cannot happen and says so.
+  assert.equal(note.ok, false);
+  assert.match(note.reason, /Merged, but not pushed.*upstream/);
+});
+
+test('runs started together stay together, and separate rounds stay apart', async t => {
+  const { repo, runs, cleanup } = await workspace();
+  t.after(cleanup);
+  const first = await runs.start({ agent: 'claude', prompt: 'one', repo, batch: 'round-one' });
+  const second = await runs.start({ agent: 'claude', prompt: 'two', repo, batch: 'round-one' });
+  await settle(runs, first.id);
+  await settle(runs, second.id);
+  const later = await runs.start({ agent: 'claude', prompt: 'three', repo });
+  await settle(runs, later.id);
+
+  const listed = runs.list();
+  const batchOf = id => listed.find(r => r.id === id).batch;
+  assert.equal(batchOf(first.id), batchOf(second.id), 'started together, grouped together');
+  assert.notEqual(batchOf(later.id), batchOf(first.id), 'a later round is its own group');
+  assert.ok(batchOf(later.id), 'a run started alone still belongs to a round');
+
+  // Picking a run up again keeps it with the round it came from.
+  const stopped = runs.runs.get(later.id);
+  stopped.status = 'interrupted';
+  stopped.error = 'stopped';
+  const again = await runs.carryOn(later.id);
+  assert.equal(runs.list().find(r => r.id === again.id).batch, batchOf(later.id));
+});

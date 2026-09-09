@@ -12,6 +12,7 @@ import { agents } from './adapters.mjs';
 import { Logins, agentUsage } from './logins.mjs';
 import { Secrets } from './secrets.mjs';
 import { Models } from './models.mjs';
+import { Auto, MODES } from './auto.mjs';
 
 const base = dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.DASHBOARD_PORT || 4783);
@@ -25,7 +26,9 @@ const secrets = new Secrets(root);
 await secrets.init();
 const models = new Models(root, vault.codexDir);
 await models.init();
-const runs = new Runs(process.env.DASHBOARD_RUNS_DIR || join(homedir(), '.local/share/codex-agent-runs'), vault, secrets, models);
+const auto = new Auto(root);
+await auto.init();
+const runs = new Runs(process.env.DASHBOARD_RUNS_DIR || join(homedir(), '.local/share/codex-agent-runs'), vault, secrets, models, auto);
 await runs.init();
 const logins = new Logins(vault);
 const agentLabels = Object.fromEntries(Object.entries(agents).map(([id, agent]) => [id, agent.label]));
@@ -68,6 +71,16 @@ async function startLogin() {
   return state;
 }
 
+// The first bytes of the file say what it really is.
+function pictureType(bytes) {
+  if (bytes.length < 12) return null;
+  if (bytes[0] === 0x89 && bytes.toString('latin1', 1, 4) === 'PNG') return 'image/png';
+  if (bytes.toString('latin1', 0, 3) === 'GIF') return 'image/gif';
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+  if (bytes.toString('latin1', 0, 4) === 'RIFF' && bytes.toString('latin1', 8, 12) === 'WEBP') return 'image/webp';
+  return null;
+}
+
 const server = http.createServer(async (req, res) => {
   const headers = type => ({ 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; media-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" });
@@ -87,11 +100,13 @@ const server = http.createServer(async (req, res) => {
     // A picture of the user's choosing, if they have dropped one in. Kept in the
     // data folder rather than shipped: it is theirs, not the app's.
     if (req.method === 'GET' && path === '/runner') {
-      for (const name of ['runner.gif', 'runner.png', 'runner.webp', 'runner.jpg']) {
+      for (const name of ['runner.gif', 'runner.png', 'runner.webp', 'runner.jpg', 'runner.jpeg']) {
         const picture = await readFile(join(root, name)).catch(() => null);
         if (!picture) continue;
-        const type = name.endsWith('.gif') ? 'image/gif' : name.endsWith('.png') ? 'image/png'
-          : name.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+        // Read from the file itself, not its name: a picture saved with the
+        // wrong extension would be refused by the browser's nosniff rule.
+        const type = pictureType(picture);
+        if (!type) return send(415, { error: 'That runner file is not an image the browser can show.' });
         res.writeHead(200, { ...headers(type), 'Cache-Control': 'no-store', 'Content-Length': String(picture.length) });
         return res.end(picture);
       }
@@ -134,7 +149,8 @@ const server = http.createServer(async (req, res) => {
         planner: agent.planner !== false
       }));
       const runner = await readdir(root).then(files => files.some(f => /^runner\.(gif|png|webp|jpg)$/.test(f)), () => false);
-      return send(200, { runs: runs.list(), agents: catalog, accounts, token: secret, runner });
+      return send(200, { runs: runs.list(), agents: catalog, accounts, token: secret, runner,
+        auto: await auto.mode(), autoModes: MODES, autoLog: runs.autoLog.slice(0, 3) });
     }
     // Names and hints only: a saved value never travels back to the page.
     if (req.method === 'GET' && path === '/api/secrets') {
@@ -182,6 +198,7 @@ const server = http.createServer(async (req, res) => {
     if (path === '/api/runs/remove') return send(200, await runs.remove(data.id, data.branch));
     if (path === '/api/runs/merge') return send(200, await runs.merge(data.id, { force: !!data.force }));
     if (path === '/api/runs/check') return send(200, await runs.check(data.id));
+    if (path === '/api/auto') return send(200, await auto.set(data.mode));
     if (path === '/api/runs/continue') return send(200, await runs.carryOn(data.id));
     if (path === '/api/runs/merge-all') return send(200, await runs.mergeAll({ force: !!data.force }));
     if (path === '/api/runs/push') return send(200, await runs.push(data.repo));

@@ -50,7 +50,7 @@
     </section>
     <div id="notice" role="status" aria-live="polite"></div>
 
-    <div class="section-title"><h2>Agents <span id="count">0</span></h2><div class="actions"><button id="keep-all" class="primary" hidden></button><button id="push" class="secondary" hidden></button><button id="tidy" class="secondary" hidden></button><button id="earlier" class="secondary" hidden></button><span class="pill" id="active">None running</span></div></div>
+    <div class="section-title"><h2>Agents <span id="count">0</span></h2><div class="actions"><label class="auto"><span>When a batch finishes</span><select id="auto"></select></label><button id="keep-all" class="primary" hidden></button><button id="push" class="secondary" hidden></button><button id="tidy" class="secondary" hidden></button><button id="earlier" class="secondary" hidden></button><span class="pill" id="active">None running</span></div></div>
     <section id="summary" class="summary" hidden aria-label="What was done">
       <div class="summary-head">
         <h3>What was done</h3>
@@ -94,7 +94,7 @@
       <div id="diff" class="diff" hidden aria-label="What the agent changed"></div>
     </section>
 
-    <section class="how"><span class="step">i</span><div><h3>How this runs</h3><p>Each agent works in its own git worktree on a new branch, so two agents never overwrite each other. When one finishes, open it and use <strong>Changes</strong> to read what it wrote, then <strong>Keep it</strong> to merge into the branch your project is on, or <strong>Throw away</strong> to delete the branch. Agents run with file edits allowed inside their own worktree; <code>Read only</code> stops them changing anything.</p></div></section>
+    <section class="how"><span class="step">i</span><div><h3>How this runs</h3><p>Each agent works in its own git worktree on a new branch, so two agents never overwrite each other. <strong>Keep it</strong> on a finished card merges its work into the branch your project is on; <strong>Push</strong> above sends the result to your remote. Open a run first if you want to read its <strong>Changes</strong>, or throw the branch away. Agents run with file edits allowed inside their own worktree; <code>Read only</code> stops them changing anything.</p></div></section>
     <footer><span>● Runs on this computer only</span><span>Output refreshes every second while an agent is working</span></footer>
   </main><script src="/runs.js"></script>
 </body></html>

@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "bin": { "codex-accounts": "cli.mjs" },
-  "files": ["cli.mjs", "server.mjs", "vault.mjs", "usage.mjs", "runs.mjs", "adapters.mjs", "logins.mjs", "secrets.mjs", "models.mjs", "app.mjs", "app.swift", "icon.mjs", "public", "README.md"],
+  "files": ["cli.mjs", "server.mjs", "vault.mjs", "usage.mjs", "runs.mjs", "adapters.mjs", "logins.mjs", "secrets.mjs", "models.mjs", "auto.mjs", "app.mjs", "app.swift", "icon.mjs", "public", "README.md"],
   "scripts": { "start": "node server.mjs", "test": "node --test", "app": "node app.mjs" },
   "engines": { "node": ">=22" }
 }
