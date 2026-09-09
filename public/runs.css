@@ -1,0 +1,212 @@
+/* Centred against the header itself, not the flex row: the two pages have
+   different items beside the tabs, which otherwise shifts them sideways. */
+aside{position:relative}
+.tabs{display:flex;gap:6px;position:absolute;left:50%;transform:translateX(-50%)}
+.tabs a{text-decoration:none;font-size:12px;font-weight:550;color:#77826f;padding:8px 14px;border-radius:8px;transition:background .15s,color .15s}
+.tabs a.on{color:#2f3b28;text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:2px}
+.tabs a:hover{background:#3f443d;color:#f4f6f1}
+@media(max-width:680px){.tabs{position:static;transform:none}}
+.starter{background:#fff;border:1px solid #e0e5db;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.starter label{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:600;letter-spacing:.4px;color:#69745f;flex:1}
+.starter .row{display:flex;gap:14px;align-items:flex-end}
+/* The agent column carries a role line under its select, so bottom-aligning
+   this row would push the account select down to meet it. */
+.starter .row.top{align-items:flex-start}
+.starter input[type=text],.starter textarea,.starter select{font:inherit;font-size:13px;font-weight:400;color:#242b29;background:#fbfcf9;border:1px solid #dde3d7;border-radius:9px;padding:11px 12px;width:100%}
+.starter textarea{resize:vertical;line-height:1.6}
+.starter .check{flex-direction:row;align-items:center;gap:8px;flex:0 0 auto;font-size:12px;font-weight:500;color:#5d6a56;padding-bottom:11px}
+.starter .check input{width:15px;height:15px;accent-color:#3d5a45}
+.starter .row button{flex:0 0 auto;margin-left:auto}
+.run{background:#fff;border:1px solid #e0e5db;border-radius:12px;padding:22px;display:flex;flex-direction:column}
+.run.running{border-color:#95ad87}
+.run.failed{border-color:#dfb9a8}
+.run-top{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+.dot{width:8px;height:8px;border-radius:50%;background:#b6bdb2;flex:0 0 auto}
+.running .dot{background:#498563;animation:pulse 1.4s ease-in-out infinite}
+.failed .dot,.interrupted .dot{background:#b8664a}
+.waiting .dot{background:#c8b06a}
+.skipped .dot{background:#b6bdb2}
+.run.waiting{border-color:#ddd4b0}
+.done .dot{background:#7b8f74}
+@keyframes pulse{50%{opacity:.25}}
+@media(prefers-reduced-motion:reduce){.running .dot{animation:none}}
+.run-agent{font-size:13px;font-weight:600}
+.run-state{font-size:11px;color:#8b9487;margin-left:auto;text-transform:capitalize}
+.run h3{font-size:14px;font-weight:500;line-height:1.5;margin:0 0 4px;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.run h3.open{display:block;max-height:340px;overflow-y:auto}
+.run .more{align-self:flex-start;background:none;color:#7d8a76;font-size:11px;padding:2px 0;margin-bottom:8px}
+.run .more:hover{background:none;color:#3f4b3d;transform:none;text-decoration:underline}
+.run .headline{font-size:12px;color:#75806f;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;margin-bottom:14px}
+.meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:auto}
+.tag{font-size:10px;background:#eef1ea;color:#66735f;border-radius:5px;padding:4px 8px;white-space:nowrap}
+.tag.add{color:#3f6b4c;background:#e6f0e5}
+.tag.del{color:#95513a;background:#f4e8e2}
+.run-actions{display:flex;gap:8px;margin-top:18px}
+.run-actions button{flex:1;background:#edf0e8;color:#415438;padding:10px}
+.run-actions button:last-child:not([hidden]){background:#283f31;color:#fff}
+.log{background:#22271f;border-radius:12px;padding:20px;max-height:520px;overflow-y:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.65}
+.line{display:flex;gap:12px;padding:3px 0;overflow-wrap:anywhere}
+.line span{color:#71806c;flex:0 0 62px}
+.line p{color:#d3dbcd;white-space:pre-wrap;font-size:12px;margin:0}
+.line.tool p,.line.file p{color:#a8c6e0}
+.line.thinking p{color:#7f8a79;font-style:italic}
+.line.status p{color:#96b189}
+.line.error p{color:#e3a68d}
+.log .empty-log{color:#79836f}
+@media(max-width:680px){.starter .row{flex-direction:column;align-items:stretch}.starter .row button{margin-left:0}.line span{display:none}}
+.picker{display:flex;gap:8px}
+.picker input{flex:1;min-width:0}
+.picker button{flex:0 0 auto;padding:11px 16px}
+
+.planner{background:#eaf0e5;border:1px solid #dce5d5;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px;margin-bottom:34px}
+.planner-head h2{font-size:17px;font-weight:550;margin:0 0 6px}
+.planner-head p{font-size:12px}
+.planner label{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:600;letter-spacing:.4px;color:#5e6c56}
+.planner textarea{font:inherit;font-size:13px;color:#242b29;background:#fbfcf9;border:1px solid #d3ddcb;border-radius:9px;padding:11px 12px;width:100%;resize:vertical;line-height:1.6}
+.planner .row{display:flex;align-items:center;gap:14px}
+.planner .row button{margin-left:auto}
+.hint{font-size:11px;color:#75836d}
+.task{background:#fff;border:1px solid #e0e5db;border-radius:12px;padding:18px;margin-bottom:12px}
+.task-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.task-top h3{font-size:14px;font-weight:600;margin:0;flex:1;min-width:160px}
+.task select{font:inherit;font-size:12px;background:#f4f6f1;border:1px solid #dde3d7;border-radius:8px;padding:7px 9px}
+.task textarea{font:inherit;font-size:12px;line-height:1.6;color:#3c453a;background:#fbfcf9;border:1px solid #e2e7dd;border-radius:9px;padding:11px 12px;width:100%;margin-top:12px;resize:vertical}
+.task .drop{background:none;color:#9aa295;font-size:11px;padding:6px 10px}
+.task .drop:hover:not(:disabled){background:#f6ece8;color:#95513a;transform:none}
+#tasks{margin-bottom:34px}
+
+.roster{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:26px}
+.roster article{background:#fff;border:1px solid #e0e5db;border-radius:11px;padding:15px 17px;display:flex;flex-direction:column}
+.roster h3{font-size:13px;font-weight:600;margin:0 0 5px}
+.roster p{font-size:11px;line-height:1.55}
+.starter .role{font-size:11px;font-weight:400;color:#7f8a78;letter-spacing:0;min-height:15px}
+.task-role{font-size:11px;color:#8b9487;flex-basis:100%;margin-top:-2px}
+@media(max-width:900px){.roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.roster{grid-template-columns:1fr}}
+
+.switch{display:flex;background:#e9ece5;border-radius:9px;padding:3px}
+.switch button{background:none;color:#69745f;font-size:12px;padding:7px 13px;border-radius:7px}
+.switch button.on{background:#fff;color:#2f3b28}
+.switch button:hover{transform:none}
+.diff{background:#fff;border:1px solid #e0e5db;border-radius:12px;overflow:hidden}
+.diff-file{border-bottom:1px solid #eceee8}
+.diff-file:last-child{border-bottom:0}
+.diff-name{display:flex;align-items:center;gap:10px;padding:12px 18px;background:#f7f9f5;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#3f4b3d;overflow-wrap:anywhere}
+.diff-name .counts{margin-left:auto;white-space:nowrap;font-size:11px}
+.diff-name .plus{color:#3f6b4c}
+.diff-name .minus{color:#95513a;margin-left:7px}
+.diff pre{margin:0;padding:10px 0;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.55}
+.diff code{display:block;padding:1px 18px;background:none;border-radius:0;white-space:pre}
+.diff .add{background:#eaf5ea;color:#26502f}
+.diff .del{background:#fbeee8;color:#7d3f2a}
+.diff .hunk{color:#8b9487;background:#fafbf8}
+.diff .cut{padding:10px 18px;font-size:11px;color:#8b9487}
+.diff .none{padding:28px;text-align:center;color:#79836f;font-size:13px}
+.merged{font-size:11px;background:#e6f0e5;color:#3f6b4c;border-radius:5px;padding:4px 8px}
+
+.keys{border-top:1px solid #eceee8;padding-top:16px;display:flex;flex-direction:column;gap:11px}
+.keys-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.keys-head strong{font-size:11px;font-weight:600;letter-spacing:.4px;color:#69745f;text-transform:uppercase}
+.keys-head span{font-size:11px;color:#8b9487}
+.key-list{display:flex;flex-wrap:wrap;gap:8px}
+.key{display:flex;align-items:center;gap:9px;background:#f4f6f1;border:1px solid #e4e9de;border-radius:8px;padding:7px 9px 7px 12px;font-size:12px}
+.key code{background:none;padding:0;font-size:12px;color:#3f4b3d}
+.key .val{color:#98a094;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px}
+.key button{background:none;color:#a3aa9d;font-size:15px;line-height:1;padding:2px 5px}
+.key button:hover:not(:disabled){background:#f2e2db;color:#95513a;transform:none}
+.key-add{display:flex;gap:9px;flex-wrap:wrap}
+.key-add input{font:inherit;font-size:13px;color:#242b29;background:#fbfcf9;border:1px solid #dde3d7;border-radius:9px;padding:10px 12px}
+#key-name{flex:0 1 230px}
+#key-value{flex:1 1 230px;min-width:0}
+.key-add button{flex:0 0 auto}
+.key-none{font-size:12px;color:#8b9487}
+.roster .model{margin-top:6px;font-size:10px;color:#7c8a74;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+/* A message about something you just clicked has to be where you are looking,
+   not at the top of a page you have scrolled well past. */
+#notice:not(:empty){position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:20;
+  max-width:min(640px,calc(100vw - 40px));margin:0;box-shadow:0 8px 30px rgba(30,40,28,.18);
+  border:1px solid #e6dcc0;background:#fff8e8}
+#notice.error:not(:empty){border-color:#e3c6b6;background:#fdf1ea}
+.section-title .in{font-size:11px;font-weight:400;color:#8b9487;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.section-title .actions{display:flex;align-items:center;gap:10px}
+
+.project{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid #e0e5db;
+  border-radius:12px;padding:15px 18px;margin-bottom:22px}
+.project label{font-size:11px;font-weight:600;letter-spacing:.4px;color:#69745f;text-transform:uppercase;white-space:nowrap}
+.project .picker{flex:1 1 320px;min-width:0}
+.project input{font:inherit;font-size:13px;color:#242b29;background:#fbfcf9;border:1px solid #dde3d7;border-radius:9px;padding:10px 12px}
+.project .hint{flex:0 1 auto}
+.progress{margin-bottom:20px}
+.progress .bar{height:6px;border-radius:99px;background:#e4e9de;overflow:hidden}
+.progress i{display:block;height:100%;background:#4d7355;border-radius:99px;transition:width .4s ease}
+.progress p{font-size:11px;color:#75806f;margin-top:8px}
+@media(prefers-reduced-motion:reduce){.progress i{transition:none}}
+#push.arming{background:#f4e2da;color:#8d4429;font-weight:600}
+
+.card-footer{margin-top:auto;padding-top:11px}
+.roster .aside{font-size:11px;line-height:1.55;color:#8b9487;margin-top:6px}
+/* Stacked, not side by side: real model names are long and were being cut off. */
+.model-picker{display:flex;flex-direction:column;gap:6px}
+.model-picker input,.model-picker select{font:inherit;font-size:11px;color:#3f4b3d;background:#fbfcf9;
+  border:1px solid #e2e7dd;border-radius:7px;padding:7px 8px;min-width:0}
+.model-picker input{flex:1}
+.model-picker select{width:100%}
+.model-picker input:focus,.model-picker select:focus{outline:2px solid #9db78e;outline-offset:1px}
+/* Fixed height, not minimum: the line under each box wraps to a different
+   number of lines per agent, which nudged the boxes out of alignment. */
+.roster .model{margin-top:7px;line-height:1.4;height:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.summary{background:#fff;border:1px solid #e0e5db;border-radius:14px;padding:22px 24px;margin-bottom:22px}
+.summary-head{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.summary-head h3{font-size:15px;font-weight:600;margin:0}
+.summary-head .actions{margin-left:auto;display:flex;gap:8px}
+.summary-head button{font-size:11px;padding:7px 12px}
+.summary-row{border-top:1px solid #eef0ea;padding:14px 0}
+.summary-row:last-of-type{padding-bottom:4px}
+.summary-line{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.summary-line strong{font-size:13px;font-weight:600}
+.summary-line .what{font-size:12px;color:#5c6858;flex:1 1 220px;min-width:0}
+.summary-row p.said{font-size:12px;color:#6d7868;line-height:1.6;margin-top:7px;white-space:pre-wrap;overflow-wrap:anywhere}
+.summary-row .none{color:#9aa295;font-style:italic}
+#summary-totals{font-size:12px;color:#5c6858;border-top:1px solid #eef0ea;padding-top:13px;margin-top:10px}
+
+.summary .plain{font-size:13px;line-height:1.75;color:#3f4b3d;white-space:pre-wrap;margin:14px 0 4px}
+.summary .plain .waiting{color:#8b9487;font-style:italic}
+.summary .plain .next{display:block;margin-top:12px;padding-top:12px;border-top:1px solid #eef0ea;color:#3d5a45;font-weight:550}
+
+
+/* A runner that laps the progress bar while agents are working. Drawn rather
+   than fetched: no image to load, and it takes the page's own colours. */
+.progress .track{position:relative}
+/* Slower and bigger: at three seconds a lap he was a smudge. */
+.runner{position:absolute;bottom:2px;left:0;width:38px;height:32px;pointer-events:none;
+  animation:lap 7s linear infinite}
+.runner svg{width:100%;height:100%;display:block}
+.runner .leg{transform-origin:50% 62%;animation:scamper .26s linear infinite alternate}
+.runner .leg-back{animation-delay:.09s}
+.runner .trail{opacity:.45;animation:flicker .22s linear infinite alternate}
+@keyframes lap{
+  0%{left:0;transform:scaleX(1)}
+  47%{left:calc(100% - 38px);transform:scaleX(1)}
+  50%{left:calc(100% - 38px);transform:scaleX(-1)}
+  97%{left:0;transform:scaleX(-1)}
+  100%{left:0;transform:scaleX(1)}
+}
+@keyframes scamper{from{transform:rotate(-38deg)}to{transform:rotate(38deg)}}
+@keyframes flicker{from{opacity:.5;transform:translateX(0)}to{opacity:.15;transform:translateX(3px)}}
+/* A picture of your own, dropped into the data folder, is used instead. */
+.runner img{width:100%;height:100%;object-fit:contain;display:block}
+@media(prefers-reduced-motion:reduce){
+  .runner{animation:none;left:calc(50% - 19px)}
+  .runner .leg,.runner .trail{animation:none}
+}
+
+.project-group{margin-bottom:26px}
+.project-group:last-child{margin-bottom:0}
+.group-head{display:flex;align-items:baseline;gap:9px;margin-bottom:12px}
+.group-head h3{font-size:13px;font-weight:600;margin:0;overflow-wrap:anywhere}
+.project-group.current .group-head h3{color:#2f3b28}
+.project-group:not(.current) .group-head h3{color:#7c8a74}
+.project-group .empty{margin:0}

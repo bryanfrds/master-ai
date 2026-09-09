@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Master AI · Accounts</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/usage.css"><link rel="stylesheet" href="/runs.css"></head>
+<body>
+  <aside><a class="brand" href="/"><span class="mark">⌘</span> Master AI<span class="light"> / accounts</span></a><nav class="tabs"><a href="/" class="on">Accounts</a><a href="/runs">Agents</a></nav><div class="local"><i></i> LOCAL WORKSPACE</div></aside>
+  <main>
+    <div class="eyebrow">YOUR TERMINAL, CONNECTED</div>
+    <header><div><h1>A simpler switch.</h1><p>All your Codex logins. One place to choose.</p></div><button id="add" class="primary">＋ Add account</button></header>
+    <section class="active-panel"><div><div class="eyebrow">CURRENT TERMINAL ACCOUNT</div><h2 id="current">Loading…</h2><p>Used by new Codex sessions in Ghostty and WezTerm.</p></div><span class="pill">↗ Terminal</span></section>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <div id="login" hidden><strong id="login-message"></strong><a id="login-link" target="_blank" rel="noreferrer" hidden>Open OpenAI sign-in ↗</a></div>
+    <section id="current-usage" aria-label="Current account usage"></section>
+    <div class="section-title"><h2>Agent logins <span id="login-count">0</span></h2><button id="logins-refresh" class="secondary">Refresh logins</button></div>
+    <section id="logins" class="grid" aria-label="Agent logins"></section>
+
+    <div class="section-title"><h2>Saved accounts <span id="count">0</span></h2><div class="actions"><label class="sound"><input id="sound" type="checkbox" checked> Sound when usage runs out</label><button id="usage-refresh" class="secondary">Refresh usage</button><button id="capture" class="secondary">Save current login</button></div></div>
+    <section id="accounts" class="grid" aria-label="Saved accounts"></section>
+    <section class="how"><span class="step">i</span><div><h3>Switch between coding sessions</h3><p>Exit Codex in your terminals before switching, then run <code>codex</code> again. Running sessions may keep their previous login and refresh it. Each account keeps its own usage limits.</p></div></section>
+    <section class="how"><span class="step">↗</span><div><h3>Take it to your other computers</h3><p>Works on macOS, Linux, and Windows through WSL. Install Node.js 22+ and Codex CLI on each computer, copy the installer, then run:</p><pre><code>npm install -g ./codex-account-dashboard-1.1.0.tgz
+codex-accounts</code></pre><p>Sign into your accounts once on each computer. Switching affects that computer only.</p><a id="download" href="/download" hidden>Download installer package ↗</a></div></section>
+    <footer><span>● Stored locally on this computer</span><span>Usage from OpenAI · Updates every minute while open</span></footer>
+  </main><script src="/app.js"></script>
+</body></html>

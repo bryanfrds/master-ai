@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Master AI · Agents</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/runs.css"></head>
+<body>
+  <aside><a class="brand" href="/runs"><span class="mark">⌘</span> Master AI<span class="light"> / agents</span></a><nav class="tabs"><a href="/">Accounts</a><a href="/runs" class="on">Agents</a></nav></aside>
+  <main>
+    <div class="eyebrow">EVERY AGENT, ONE SCREEN</div>
+    <header><div><h1>Run them together.</h1><p>Start Claude Code and Codex on the same project. Each one gets its own branch.</p></div></header>
+
+    <section class="project">
+      <label for="repo">Project folder</label>
+      <span class="picker"><input id="repo" type="text" spellcheck="false" placeholder="~/my-project"><button id="browse" type="button" class="secondary" hidden>Choose…</button></span>
+      <span class="hint" id="project-note">Everything on this page works on this folder.</span>
+    </section>
+
+    <section id="roster" class="roster" aria-label="What each agent is for"></section>
+
+    <section class="planner">
+      <div class="planner-head"><h2>Hand Claude the whole job</h2><p>Claude reads the project, splits the work, and picks who does what. Nothing runs until you say so.</p></div>
+      <label>Goal<textarea id="goal" rows="2" placeholder="Add a wishlist: users can save products and see them on a wishlist page."></textarea></label>
+      <div class="row"><span class="hint" id="plan-hint">Uses the project folder above.</span><button id="plan" class="primary">Plan the work</button></div>
+    </section>
+
+    <section id="tasks" hidden aria-label="Proposed tasks">
+      <div class="section-title"><h2>Proposed tasks <span id="task-count">0</span> <span class="in" id="task-where"></span></h2><div class="actions"><button id="discard" class="secondary">Discard</button><button id="dispatch" class="primary">Start all</button></div></div>
+      <div id="task-list"></div>
+    </section>
+
+    <div class="section-title"><h2>Or start one yourself</h2></div>
+    <section class="starter">
+      <div class="row top">
+        <label>Agent<select id="agent"></select><span class="role" id="agent-role"></span></label>
+        <label>Account<select id="account"><option value="">Terminal default</option></select></label>
+      </div>
+      <label>Task<textarea id="prompt" rows="3" placeholder="Build the settings page and wire it to the existing API."></textarea></label>
+      <div class="keys">
+        <div class="keys-head"><strong>Project keys</strong><span id="keys-note">Given to every agent working on this folder.</span></div>
+        <div id="key-list" class="key-list"></div>
+        <div class="key-add">
+          <input id="key-name" type="text" spellcheck="false" autocomplete="off" placeholder="OPENAI_API_KEY">
+          <input id="key-value" type="password" autocomplete="new-password" placeholder="paste the value">
+          <button id="key-save" class="secondary" type="button">Save key</button>
+        </div>
+      </div>
+      <div class="row">
+        <label class="check"><input id="worktree" type="checkbox" checked> Own git branch</label>
+        <label class="check"><input id="readonly" type="checkbox"> Read only</label>
+        <button id="start" class="primary">▶ Start agent</button>
+      </div>
+    </section>
+    <div id="notice" role="status" aria-live="polite"></div>
+
+    <div class="section-title"><h2>Agents <span id="count">0</span></h2><div class="actions"><button id="keep-all" class="primary" hidden></button><button id="push" class="secondary" hidden></button><button id="tidy" class="secondary" hidden></button><button id="earlier" class="secondary" hidden></button><span class="pill" id="active">None running</span></div></div>
+    <section id="summary" class="summary" hidden aria-label="What was done">
+      <div class="summary-head">
+        <h3>What was done</h3>
+        <div class="actions"><button id="detail-summary" class="secondary">Show the details</button><button id="copy-summary" class="secondary">Copy</button><button id="hide-summary" class="secondary">Hide</button></div>
+      </div>
+      <div id="summary-plain" class="plain"></div>
+      <div id="summary-body" hidden></div>
+      <p id="summary-totals"></p>
+    </section>
+
+    <section id="progress" class="progress" hidden aria-label="Overall progress">
+      <div class="track">
+        <div class="bar"><i id="progress-fill"></i></div>
+        <div class="runner" id="runner" aria-hidden="true">
+          <svg viewBox="0 0 26 22" fill="none">
+            <path class="trail" d="M1 13h7M2 17h5" stroke="#7fa07f" stroke-width="1.6" stroke-linecap="round"/>
+            <path class="leg leg-back" d="M13 14l-3 5" stroke="#3d5a45" stroke-width="2.2" stroke-linecap="round"/>
+            <path class="leg" d="M16 14l3 5" stroke="#3d5a45" stroke-width="2.2" stroke-linecap="round"/>
+            <circle cx="16" cy="9" r="6" fill="#4d7355"/>
+            <path d="M11 5c-2-2-3-4-2-5 1.5-.6 3.4.8 4.4 2.4" fill="#4d7355"/>
+            <circle cx="19" cy="8" r="1.5" fill="#fbfcf9"/>
+            <circle cx="19.6" cy="8" r=".7" fill="#22301f"/>
+            <path d="M21 11h3" stroke="#3d5a45" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <p id="progress-text"></p>
+    </section>
+    <section id="runs" aria-label="Agent runs"></section>
+
+    <section id="detail" hidden>
+      <div class="section-title"><h2 id="detail-title">Output</h2>
+        <div class="actions">
+          <div class="switch" role="tablist"><button id="tab-log" class="on" role="tab">Output</button><button id="tab-diff" role="tab">Changes</button></div>
+          <button id="merge" class="primary" hidden>Keep it</button>
+          <button id="discard-branch" class="secondary" hidden>Throw away</button>
+          <button id="close" class="secondary">Close</button>
+        </div>
+      </div>
+      <div id="log" class="log" aria-live="polite" aria-label="Agent output"></div>
+      <div id="diff" class="diff" hidden aria-label="What the agent changed"></div>
+    </section>
+
+    <section class="how"><span class="step">i</span><div><h3>How this runs</h3><p>Each agent works in its own git worktree on a new branch, so two agents never overwrite each other. When one finishes, open it and use <strong>Changes</strong> to read what it wrote, then <strong>Keep it</strong> to merge into the branch your project is on, or <strong>Throw away</strong> to delete the branch. Agents run with file edits allowed inside their own worktree; <code>Read only</code> stops them changing anything.</p></div></section>
+    <footer><span>● Runs on this computer only</span><span>Output refreshes every second while an agent is working</span></footer>
+  </main><script src="/runs.js"></script>
+</body></html>
